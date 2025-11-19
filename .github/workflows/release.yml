@@ -1,0 +1,139 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    name: Create Release
+    runs-on: ubuntu-latest
+    outputs:
+      upload_url: ${{ steps.create_release.outputs.upload_url }}
+      version: ${{ steps.get_version.outputs.version }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Get version from tag
+        id: get_version
+        run: echo "version=${GITHUB_REF#refs/tags/v}" >> $GITHUB_OUTPUT
+
+      - name: Create Release
+        id: create_release
+        uses: actions/create-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tag_name: ${{ github.ref }}
+          release_name: Release ${{ github.ref_name }}
+          body: |
+            ## SSH Exporter ${{ github.ref_name }}
+
+            ### Downloads
+
+            Choose the appropriate binary for your platform:
+
+            - **Linux AMD64**: `ssh_exporter-linux-amd64`
+            - **Linux ARM64**: `ssh_exporter-linux-arm64`
+            - **Windows AMD64**: `ssh_exporter-windows-amd64.exe`
+            - **macOS AMD64**: `ssh_exporter-darwin-amd64`
+            - **macOS ARM64 (Apple Silicon)**: `ssh_exporter-darwin-arm64`
+
+            ### Installation
+
+            1. Download the binary for your platform
+            2. Make it executable (Linux/macOS): `chmod +x ssh_exporter-*`
+            3. Copy `config.yaml.example` to `config.yaml` and configure
+            4. Run: `./ssh_exporter`
+
+            ### What's Changed
+
+            See the [CHANGELOG](https://github.com/5iop/ssh_exporter/commits/main) for details.
+          draft: false
+          prerelease: false
+
+  build:
+    name: Build ${{ matrix.os }}-${{ matrix.arch }}
+    needs: release
+    runs-on: ${{ matrix.runner }}
+    strategy:
+      matrix:
+        include:
+          - os: linux
+            arch: amd64
+            runner: ubuntu-latest
+            goos: linux
+            goarch: amd64
+            suffix: ''
+          - os: linux
+            arch: arm64
+            runner: ubuntu-latest
+            goos: linux
+            goarch: arm64
+            suffix: ''
+          - os: windows
+            arch: amd64
+            runner: ubuntu-latest
+            goos: windows
+            goarch: amd64
+            suffix: '.exe'
+          - os: darwin
+            arch: amd64
+            runner: ubuntu-latest
+            goos: darwin
+            goarch: amd64
+            suffix: ''
+          - os: darwin
+            arch: arm64
+            runner: ubuntu-latest
+            goos: darwin
+            goarch: arm64
+            suffix: ''
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.21'
+
+      - name: Build binary
+        env:
+          CGO_ENABLED: 0
+          GOOS: ${{ matrix.goos }}
+          GOARCH: ${{ matrix.goarch }}
+        run: |
+          VERSION="${{ needs.release.outputs.version }}"
+          BUILD_TIME=$(date -u '+%Y-%m-%d_%H:%M:%S')
+          LDFLAGS="-s -w -X main.Version=${VERSION} -X main.BuildTime=${BUILD_TIME}"
+
+          go build -ldflags "${LDFLAGS}" -o ssh_exporter-${{ matrix.os }}-${{ matrix.arch }}${{ matrix.suffix }} .
+
+          sha256sum ssh_exporter-${{ matrix.os }}-${{ matrix.arch }}${{ matrix.suffix }} > ssh_exporter-${{ matrix.os }}-${{ matrix.arch }}${{ matrix.suffix }}.sha256
+
+      - name: Upload Release Asset
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ needs.release.outputs.upload_url }}
+          asset_path: ./ssh_exporter-${{ matrix.os }}-${{ matrix.arch }}${{ matrix.suffix }}
+          asset_name: ssh_exporter-${{ matrix.os }}-${{ matrix.arch }}${{ matrix.suffix }}
+          asset_content_type: application/octet-stream
+
+      - name: Upload Checksum
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ needs.release.outputs.upload_url }}
+          asset_path: ./ssh_exporter-${{ matrix.os }}-${{ matrix.arch }}${{ matrix.suffix }}.sha256
+          asset_name: ssh_exporter-${{ matrix.os }}-${{ matrix.arch }}${{ matrix.suffix }}.sha256
+          asset_content_type: text/plain

@@ -1,0 +1,100 @@
+# SSH Exporter Configuration Example
+# Copy this file to config.yaml and modify according to your needs
+
+hosts:
+  # Example 1: Full monitoring (processes, files, system stats)
+  - host: "192.168.1.100"
+    user: "monitoring"
+    password: "your_password_here"
+    port: 22
+    monitors:
+      # System statistics monitoring (CPU, Memory, Disk)
+      stat: true
+
+      # Process monitoring
+      processes:
+        - path_pattern: "/proc/[0-9]*/cmdline"
+          patterns:
+            - "nginx"       # Monitor Nginx processes
+            - "java"        # Monitor Java processes
+            - "python"      # Monitor Python processes
+
+      # File monitoring
+      files:
+        - path: "/var/log/app/"
+          labels:
+            - pattern: ".*\.log$"
+              name: "type"
+              value: "logfile"
+        - path: "/data/backups/"
+          labels:
+            - pattern: ".*\.tar\.gz$"
+              name: "type"
+              value: "backup"
+
+  # Example 2: Only system stats monitoring
+  - host: "192.168.1.101"
+    user: "admin"
+    password: "password123"
+    port: 22
+    monitors:
+      stat: true
+
+  # Example 3: Only process monitoring
+  - host: "192.168.1.102"
+    user: "monitor"
+    password: "secure_password"
+    port: 2222  # Custom SSH port
+    monitors:
+      processes:
+        - path_pattern: "/proc/[0-9]*/cmdline"
+          patterns:
+            - "redis-server"
+            - "mysqld"
+
+  # Example 4: Only file monitoring
+  - host: "192.168.1.103"
+    user: "filecheck"
+    password: "file_password"
+    port: 22
+    monitors:
+      files:
+        - path: "/var/log/"
+          labels:
+            - pattern: ".*\.log$"
+              name: "logtype"
+              value: "system"
+
+  # Example 5: Host connectivity check only (no detailed monitoring)
+  - host: "192.168.1.104"
+    user: "readonly"
+    password: "readonly_pass"
+    port: 22
+    # No monitors specified - only SSH connectivity will be checked
+
+# Configuration Notes:
+# 
+# 1. Security:
+#    - Passwords are stored in plaintext, protect this file with proper permissions
+#    - Recommended: chmod 600 config.yaml
+#    - Consider using SSH key authentication in production (not yet supported)
+#
+# 2. Monitoring Types:
+#    - stat: System statistics (CPU, memory, disk usage)
+#    - processes: Process pattern matching and counting
+#    - files: File size, age, and modification time tracking
+#    - If no monitors specified, only SSH connectivity is checked
+#
+# 3. SSH Requirements:
+#    - User must have read access to /proc/*/cmdline for process monitoring
+#    - User must have read access to /proc/stat and /proc/meminfo for system stats
+#    - User must have access to monitored file paths
+#
+# 4. Performance:
+#    - Each host is monitored concurrently (via goroutines)
+#    - System stats monitoring executes 4 SSH commands (~1.2 seconds per scrape)
+#    - Adjust Prometheus scrape interval accordingly (recommended: 15s-60s)
+#
+# 5. Default Values:
+#    - port: 22 (if not specified)
+#    - All monitors are optional
