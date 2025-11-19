@@ -3,6 +3,7 @@
 
 # Optional global settings
 # listen: ":9100"           # HTTP listen address (can be overridden by -listen flag)
+# metric_prefix: "ssh_"     # Prefix for all metric names (optional, default: no prefix)
 # http_auth:                # Optional HTTP basic authentication
 #   username: "admin"
 #   password: "secret"
@@ -20,8 +21,7 @@ hosts:
 
       # Process monitoring
       processes:
-        - path_pattern: "/proc/[0-9]*/cmdline"
-          patterns:
+        - patterns:
             - "nginx"       # Monitor Nginx processes
             - "java"        # Monitor Java processes
             - "python"      # Monitor Python processes
@@ -54,8 +54,7 @@ hosts:
     port: 2222  # Custom SSH port
     monitors:
       processes:
-        - path_pattern: "/proc/[0-9]*/cmdline"
-          patterns:
+        - patterns:
             - "redis-server"
             - "mysqld"
 

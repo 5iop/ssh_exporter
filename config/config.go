@@ -9,9 +9,10 @@ import (
 
 // Config 总配置结构
 type Config struct {
-	Listen   string       `yaml:"listen"`    // HTTP监听地址，例如 ":9100"
-	HTTPAuth *HTTPAuth    `yaml:"http_auth"` // HTTP基本认证配置（可选）
-	Hosts    []HostConfig `yaml:"hosts"`
+	Listen       string       `yaml:"listen"`        // HTTP监听地址，例如 ":9100"
+	MetricPrefix string       `yaml:"metric_prefix"` // 指标名称前缀（可选），例如 "ssh_exporter_"
+	HTTPAuth     *HTTPAuth    `yaml:"http_auth"`     // HTTP基本认证配置（可选）
+	Hosts        []HostConfig `yaml:"hosts"`
 }
 
 // HTTPAuth HTTP基本认证配置
@@ -39,8 +40,7 @@ type MonitorConfig struct {
 
 // ProcessMonitor 进程监控配置
 type ProcessMonitor struct {
-	PathPattern string   `yaml:"path_pattern"` // 例如：/proc/[0-9]*/cmdline
-	Patterns    []string `yaml:"patterns"`     // 要搜索的模式列表
+	Patterns []string `yaml:"patterns"` // 要搜索的进程名称模式列表
 }
 
 // FileMonitor 文件监控配置

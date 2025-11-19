@@ -16,8 +16,9 @@ var logger = log.New(os.Stdout, "[Collector] ", log.LstdFlags)
 
 // SSHCollector 实现Prometheus Collector接口
 type SSHCollector struct {
-	config *config.Config
-	mu     sync.Mutex
+	config       *config.Config
+	mu           sync.Mutex
+	metricPrefix string // 指标名称前缀
 
 	// 进程监控指标
 	processPatternCount *prometheus.Desc
@@ -59,154 +60,156 @@ type SSHCollector struct {
 
 // NewSSHCollector 创建新的SSH Collector
 func NewSSHCollector(cfg *config.Config) *SSHCollector {
+	prefix := cfg.MetricPrefix
 	return &SSHCollector{
-		config: cfg,
+		config:       cfg,
+		metricPrefix: prefix,
 		processPatternCount: prometheus.NewDesc(
-			"process_pattern_count",
+			prefix+"process_pattern_count",
 			"Count of pattern in process cmdlines",
 			[]string{"host", "pattern"},
 			nil,
 		),
 		fileSize: prometheus.NewDesc(
-			"file_size_bytes",
+			prefix+"file_size_bytes",
 			"File size in bytes",
 			[]string{"host", "path", "filename"},
 			nil,
 		),
 		fileLastModified: prometheus.NewDesc(
-			"file_last_modified_timestamp",
+			prefix+"file_last_modified_timestamp",
 			"Last modified timestamp of file",
 			[]string{"host", "path", "filename"},
 			nil,
 		),
 		fileAgeMinutes: prometheus.NewDesc(
-			"file_age_minutes",
+			prefix+"file_age_minutes",
 			"Minutes since last modification",
 			[]string{"host", "path", "filename"},
 			nil,
 		),
 		hostSSHStatus: prometheus.NewDesc(
-			"host_ssh_status",
+			prefix+"host_ssh_status",
 			"SSH connection status to host (1: success, 0: failure)",
 			[]string{"host"},
 			nil,
 		),
 		hostLastCheck: prometheus.NewDesc(
-			"host_last_check_timestamp",
+			prefix+"host_last_check_timestamp",
 			"Last successful check timestamp of host",
 			[]string{"host"},
 			nil,
 		),
 		cpuUserSeconds: prometheus.NewDesc(
-			"cpu_user_seconds_total",
+			prefix+"cpu_user_seconds_total",
 			"Total CPU time spent in user mode",
 			[]string{"host"},
 			nil,
 		),
 		cpuSystemSeconds: prometheus.NewDesc(
-			"cpu_system_seconds_total",
+			prefix+"cpu_system_seconds_total",
 			"Total CPU time spent in system mode",
 			[]string{"host"},
 			nil,
 		),
 		cpuIdleSeconds: prometheus.NewDesc(
-			"cpu_idle_seconds_total",
+			prefix+"cpu_idle_seconds_total",
 			"Total CPU idle time",
 			[]string{"host"},
 			nil,
 		),
 		cpuIowaitSeconds: prometheus.NewDesc(
-			"cpu_iowait_seconds_total",
+			prefix+"cpu_iowait_seconds_total",
 			"Total CPU time waiting for I/O",
 			[]string{"host"},
 			nil,
 		),
 		cpuUsagePercent: prometheus.NewDesc(
-			"cpu_usage_percent",
+			prefix+"cpu_usage_percent",
 			"CPU usage percentage",
 			[]string{"host"},
 			nil,
 		),
 		contextSwitches: prometheus.NewDesc(
-			"context_switches_total",
+			prefix+"context_switches_total",
 			"Total number of context switches",
 			[]string{"host"},
 			nil,
 		),
 		interrupts: prometheus.NewDesc(
-			"interrupts_total",
+			prefix+"interrupts_total",
 			"Total number of interrupts",
 			[]string{"host"},
 			nil,
 		),
 		processesRunning: prometheus.NewDesc(
-			"processes_running",
+			prefix+"processes_running",
 			"Number of processes in running state",
 			[]string{"host"},
 			nil,
 		),
 		processesBlocked: prometheus.NewDesc(
-			"processes_blocked",
+			prefix+"processes_blocked",
 			"Number of processes blocked waiting for I/O",
 			[]string{"host"},
 			nil,
 		),
 		memoryTotalBytes: prometheus.NewDesc(
-			"memory_total_bytes",
+			prefix+"memory_total_bytes",
 			"Total memory in bytes",
 			[]string{"host"},
 			nil,
 		),
 		memoryFreeBytes: prometheus.NewDesc(
-			"memory_free_bytes",
+			prefix+"memory_free_bytes",
 			"Free memory in bytes",
 			[]string{"host"},
 			nil,
 		),
 		memoryAvailableBytes: prometheus.NewDesc(
-			"memory_available_bytes",
+			prefix+"memory_available_bytes",
 			"Available memory in bytes",
 			[]string{"host"},
 			nil,
 		),
 		memoryBuffersBytes: prometheus.NewDesc(
-			"memory_buffers_bytes",
+			prefix+"memory_buffers_bytes",
 			"Memory used for buffers in bytes",
 			[]string{"host"},
 			nil,
 		),
 		memoryCachedBytes: prometheus.NewDesc(
-			"memory_cached_bytes",
+			prefix+"memory_cached_bytes",
 			"Memory used for cache in bytes",
 			[]string{"host"},
 			nil,
 		),
 		memoryUsagePercent: prometheus.NewDesc(
-			"memory_usage_percent",
+			prefix+"memory_usage_percent",
 			"Memory usage percentage",
 			[]string{"host"},
 			nil,
 		),
 		diskTotalBytes: prometheus.NewDesc(
-			"disk_total_bytes",
+			prefix+"disk_total_bytes",
 			"Total disk space in bytes",
 			[]string{"host", "device", "mount_point"},
 			nil,
 		),
 		diskUsedBytes: prometheus.NewDesc(
-			"disk_used_bytes",
+			prefix+"disk_used_bytes",
 			"Used disk space in bytes",
 			[]string{"host", "device", "mount_point"},
 			nil,
 		),
 		diskFreeBytes: prometheus.NewDesc(
-			"disk_free_bytes",
+			prefix+"disk_free_bytes",
 			"Free disk space in bytes",
 			[]string{"host", "device", "mount_point"},
 			nil,
 		),
 		diskUsagePercent: prometheus.NewDesc(
-			"disk_usage_percent",
+			prefix+"disk_usage_percent",
 			"Disk usage percentage",
 			[]string{"host", "device", "mount_point"},
 			nil,

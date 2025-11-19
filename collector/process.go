@@ -1,7 +1,6 @@
 package collector
 
 import (
-	"fmt"
 	"strings"
 
 	"ssh_exporter/config"
@@ -12,8 +11,8 @@ import (
 
 // collectProcessMetrics 收集进程监控指标
 func (c *SSHCollector) collectProcessMetrics(client *sshclient.Client, host string, monitor config.ProcessMonitor, ch chan<- prometheus.Metric) {
-	// 执行find命令获取进程cmdline
-	command := fmt.Sprintf("find /proc -maxdepth 2 -name 'cmdline' -path '%s' -exec cat {} \\; 2>/dev/null", monitor.PathPattern)
+	// 执行find命令获取进程cmdline（路径模式固定为 /proc/[0-9]*/cmdline）
+	command := "find /proc -maxdepth 2 -name 'cmdline' -path '/proc/[0-9]*/cmdline' -exec cat {} \\; 2>/dev/null"
 	output, err := client.ExecuteCommand(command)
 	if err != nil {
 		logger.Printf("Failed to get process cmdlines on %s: %v", host, err)
@@ -34,19 +33,13 @@ func (c *SSHCollector) collectProcessMetrics(client *sshclient.Client, host stri
 		}
 		logger.Printf("Host %s: pattern '%s' found %d times", host, pattern, count)
 
-		// 为了与Python版本兼容，使用带pattern的指标名称
-		metricName := fmt.Sprintf("process_pattern_count_%s", pattern)
-		desc := prometheus.NewDesc(
-			metricName,
-			fmt.Sprintf("Count of pattern \"%s\" in process cmdlines", pattern),
-			[]string{"host"},
-			nil,
-		)
+		// 使用统一的指标描述符
 		ch <- prometheus.MustNewConstMetric(
-			desc,
+			c.processPatternCount,
 			prometheus.GaugeValue,
 			float64(count),
 			host,
+			pattern,
 		)
 	}
 }

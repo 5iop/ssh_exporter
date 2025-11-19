@@ -37,29 +37,64 @@ chmod 600 config.yaml
 ./ssh_exporter -config /path/to/config.yaml -listen :8080
 ```
 
-## Configuration Example
+## Configuration
+
+### Global Settings
 
 ```yaml
 # Optional global settings
-listen: ":9100"              # HTTP listen address (can be overridden by -listen flag)
+listen: ":9100"              # HTTP listen address (default: :9109)
+metric_prefix: "ssh_"        # Prefix for all metrics (default: no prefix)
 http_auth:                   # Optional HTTP basic authentication
   username: "admin"
   password: "secret"
-
-hosts:
-  - host: "192.168.1.100"
-    user: "monitoring"
-    password: "your_password"  # Use either password or private_key
-    # private_key: "/path/to/id_rsa"  # SSH private key (alternative to password)
-    port: 22
-    monitors:
-      stat: true
-      processes:
-        - path_pattern: "/proc/[0-9]*/cmdline"
-          patterns: ["nginx", "java"]
-      files:
-        - path: "/var/log/"
 ```
+
+**Global Options:**
+- `listen` - HTTP server listen address (can be overridden by `-listen` command-line flag)
+- `metric_prefix` - Optional prefix added to all metric names (e.g., `ssh_cpu_usage_percent`)
+- `http_auth` - Optional HTTP basic authentication to protect metrics endpoint
+
+### Host Configuration
+
+Each host can have different monitoring configurations:
+
+```yaml
+hosts:
+  - host: "192.168.1.100"        # IP address or hostname
+    user: "monitoring"            # SSH username
+    password: "your_password"     # SSH password (use password OR private_key)
+    private_key: "/path/to/id_rsa"  # SSH private key path (alternative to password)
+    port: 22                      # SSH port (default: 22)
+
+    monitors:
+      # System statistics (CPU, memory, disk)
+      stat: true
+
+      # Process monitoring
+      processes:
+        - patterns: ["nginx", "java", "python"]  # Process names to count
+
+      # File monitoring
+      files:
+        - path: "/var/log/"       # Directory to monitor
+          labels:
+            - pattern: ".*\\.log$"
+              name: "type"
+              value: "logfile"
+```
+
+**Host Options:**
+- `host` - Target hostname or IP address (required)
+- `user` - SSH username (required)
+- `password` - SSH password (optional, use password OR private_key)
+- `private_key` - Path to SSH private key file (optional, alternative to password)
+- `port` - SSH port number (optional, default: 22)
+
+**Monitor Types:**
+- `stat` - Collect system statistics (CPU, memory, disk usage)
+- `processes` - Count processes by name pattern
+- `files` - Monitor file size, age, and modification time
 
 ## Security Notes
 
@@ -74,4 +109,4 @@ See full documentation for complete metrics list.
 
 ## License
 
-MIT License - see LICENSE file for details.
+Apache License 2.0 - see LICENSE file for details.

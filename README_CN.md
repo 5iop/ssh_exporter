@@ -32,29 +32,7 @@
 cp config.yaml.example config.yaml
 ```
 
-2. 编辑 `config.yaml` 填写主机信息：
-
-```yaml
-# 可选的全局配置
-listen: ":9100"              # HTTP监听地址（可被 -listen 参数覆盖）
-http_auth:                   # 可选的HTTP基本认证
-  username: "admin"
-  password: "secret"
-
-hosts:
-  - host: "192.168.1.100"
-    user: "monitoring"
-    password: "your_password"  # 使用密码或私钥二选一
-    # private_key: "/path/to/id_rsa"  # SSH私钥路径（密码的替代方案）
-    port: 22
-    monitors:
-      stat: true
-      processes:
-        - path_pattern: "/proc/[0-9]*/cmdline"
-          patterns: ["nginx", "java"]
-      files:
-        - path: "/var/log/"
-```
+2. 编辑 `config.yaml`（详细配置说明见下文）
 
 3. 保护配置文件：
 
@@ -71,6 +49,65 @@ chmod 600 config.yaml
 # 自定义配置文件和端口
 ./ssh_exporter -config /path/to/config.yaml -listen :8080
 ```
+
+## 配置说明
+
+### 全局设置
+
+```yaml
+# 可选的全局配置
+listen: ":9100"              # HTTP监听地址（默认：:9109）
+metric_prefix: "ssh_"        # 指标名称前缀（默认：无前缀）
+http_auth:                   # 可选的HTTP基本认证
+  username: "admin"
+  password: "secret"
+```
+
+**全局选项：**
+- `listen` - HTTP服务器监听地址（可被 `-listen` 命令行参数覆盖）
+- `metric_prefix` - 为所有指标名称添加前缀（例如：`ssh_cpu_usage_percent`）
+- `http_auth` - 可选的HTTP基本认证以保护指标端点
+
+### 主机配置
+
+每个主机可以有不同的监控配置：
+
+```yaml
+hosts:
+  - host: "192.168.1.100"        # IP地址或主机名
+    user: "monitoring"            # SSH用户名
+    password: "your_password"     # SSH密码（密码或私钥二选一）
+    private_key: "/path/to/id_rsa"  # SSH私钥路径（密码的替代方案）
+    port: 22                      # SSH端口（默认：22）
+
+    monitors:
+      # 系统统计（CPU、内存、磁盘）
+      stat: true
+
+      # 进程监控
+      processes:
+        - patterns: ["nginx", "java", "python"]  # 要统计的进程名称
+
+      # 文件监控
+      files:
+        - path: "/var/log/"       # 要监控的目录
+          labels:
+            - pattern: ".*\\.log$"
+              name: "type"
+              value: "logfile"
+```
+
+**主机选项：**
+- `host` - 目标主机名或IP地址（必需）
+- `user` - SSH用户名（必需）
+- `password` - SSH密码（可选，密码或私钥二选一）
+- `private_key` - SSH私钥文件路径（可选，密码的替代方案）
+- `port` - SSH端口号（可选，默认：22）
+
+**监控类型：**
+- `stat` - 收集系统统计信息（CPU、内存、磁盘使用率）
+- `processes` - 按名称模式统计进程数量
+- `files` - 监控文件大小、年龄和修改时间
 
 ### Prometheus 配置
 
@@ -183,4 +220,4 @@ process_pattern_count{host="192.168.1.100", pattern="nginx"}
 
 ## 许可证
 
-本项目采用 MIT 许可证 - 详见 [LICENSE](LICENSE) 文件。
+本项目采用 Apache License 2.0 - 详见 [LICENSE](LICENSE) 文件。
