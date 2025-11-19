@@ -278,8 +278,26 @@ func (c *SSHCollector) collectHostMetrics(hostConfig config.HostConfig, ch chan<
 	currentTime := float64(time.Now().Unix())
 
 	// 创建SSH客户端
-	client := sshclient.NewClient(hostConfig.Host, hostConfig.User, hostConfig.Password, hostConfig.Port)
-	err := client.Connect()
+	client, err := sshclient.NewClient(
+		hostConfig.Host,
+		hostConfig.User,
+		hostConfig.Password,
+		hostConfig.PrivateKeyPath,
+		hostConfig.Port,
+	)
+	if err != nil {
+		logger.Printf("Failed to create SSH client for %s: %v", hostConfig.Host, err)
+		// 报告连接失败
+		ch <- prometheus.MustNewConstMetric(
+			c.hostSSHStatus,
+			prometheus.GaugeValue,
+			0,
+			hostConfig.Host,
+		)
+		return
+	}
+
+	err = client.Connect()
 	if err != nil {
 		logger.Printf("Failed to connect to %s: %v", hostConfig.Host, err)
 		// 报告连接失败

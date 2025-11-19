@@ -19,13 +19,7 @@ A Prometheus exporter written in Go that collects metrics from remote Linux host
 
 ### Installation
 
-Download from releases or build from source:
-
-```bash
-git clone https://github.com/5iop/ssh_exporter.git
-cd ssh_exporter
-go build -o ssh_exporter .
-```
+Download the latest release from [Releases](https://github.com/5iop/ssh_exporter/releases) page.
 
 ### Configuration
 
@@ -46,10 +40,17 @@ chmod 600 config.yaml
 ## Configuration Example
 
 ```yaml
+# Optional global settings
+listen: ":9100"              # HTTP listen address (can be overridden by -listen flag)
+http_auth:                   # Optional HTTP basic authentication
+  username: "admin"
+  password: "secret"
+
 hosts:
   - host: "192.168.1.100"
     user: "monitoring"
-    password: "your_password"
+    password: "your_password"  # Use either password or private_key
+    # private_key: "/path/to/id_rsa"  # SSH private key (alternative to password)
     port: 22
     monitors:
       stat: true
@@ -60,17 +61,16 @@ hosts:
         - path: "/var/log/"
 ```
 
+## Security Notes
+
+- **SSH Host Keys**: The exporter uses `InsecureIgnoreHostKey()` and will trust all SSH host keys automatically
+- **Passwords**: Stored in plaintext in config file - protect with `chmod 600 config.yaml`
+- **SSH Authentication**: Supports both password and private key authentication
+- **HTTP Authentication**: Optional HTTP basic auth to protect metrics endpoint
+
 ## Metrics
 
 See full documentation for complete metrics list.
-
-## Building
-
-```bash
-make build              # Current platform
-make build-linux-amd64  # Linux AMD64
-make build-all          # All platforms
-```
 
 ## License
 

@@ -2,6 +2,7 @@ package ssh
 
 import (
 	"fmt"
+	"os"
 	"time"
 
 	"golang.org/x/crypto/ssh"
@@ -16,13 +17,28 @@ type Client struct {
 }
 
 // NewClient 创建新的SSH客户端
-func NewClient(host, user, password string, port int) *Client {
+// 如果提供了privateKeyPath，将使用私钥认证；否则使用密码认证
+func NewClient(host, user, password, privateKeyPath string, port int) (*Client, error) {
+	var authMethods []ssh.AuthMethod
+
+	// 优先使用私钥认证
+	if privateKeyPath != "" {
+		key, err := loadPrivateKey(privateKeyPath)
+		if err != nil {
+			return nil, fmt.Errorf("failed to load private key: %w", err)
+		}
+		authMethods = append(authMethods, ssh.PublicKeys(key))
+	} else if password != "" {
+		// 使用密码认证
+		authMethods = append(authMethods, ssh.Password(password))
+	} else {
+		return nil, fmt.Errorf("neither password nor private key provided")
+	}
+
 	config := &ssh.ClientConfig{
-		User: user,
-		Auth: []ssh.AuthMethod{
-			ssh.Password(password),
-		},
-		HostKeyCallback: ssh.InsecureIgnoreHostKey(),
+		User:            user,
+		Auth:            authMethods,
+		HostKeyCallback: ssh.InsecureIgnoreHostKey(), // 信任所有主机密钥
 		Timeout:         10 * time.Second,
 	}
 
@@ -30,7 +46,23 @@ func NewClient(host, user, password string, port int) *Client {
 		config: config,
 		host:   host,
 		port:   port,
+	}, nil
+}
+
+// loadPrivateKey 从文件加载SSH私钥
+func loadPrivateKey(path string) (ssh.Signer, error) {
+	keyData, err := os.ReadFile(path)
+	if err != nil {
+		return nil, fmt.Errorf("failed to read private key file: %w", err)
 	}
+
+	// 尝试解析私钥（支持无密码保护的私钥）
+	key, err := ssh.ParsePrivateKey(keyData)
+	if err != nil {
+		return nil, fmt.Errorf("failed to parse private key: %w", err)
+	}
+
+	return key, nil
 }
 
 // Connect 连接到SSH服务器

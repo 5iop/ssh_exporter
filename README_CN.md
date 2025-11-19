@@ -22,23 +22,7 @@
 
 ### 安装
 
-#### 下载预编译二进制文件
-
 从 [Releases](https://github.com/5iop/ssh_exporter/releases) 页面下载最新版本。
-
-#### 从源码编译
-
-```bash
-# 克隆仓库
-git clone https://github.com/5iop/ssh_exporter.git
-cd ssh_exporter
-
-# 编译
-go build -o ssh_exporter .
-
-# 或使用 make
-make build
-```
 
 ### 配置
 
@@ -51,10 +35,17 @@ cp config.yaml.example config.yaml
 2. 编辑 `config.yaml` 填写主机信息：
 
 ```yaml
+# 可选的全局配置
+listen: ":9100"              # HTTP监听地址（可被 -listen 参数覆盖）
+http_auth:                   # 可选的HTTP基本认证
+  username: "admin"
+  password: "secret"
+
 hosts:
   - host: "192.168.1.100"
     user: "monitoring"
-    password: "your_password"
+    password: "your_password"  # 使用密码或私钥二选一
+    # private_key: "/path/to/id_rsa"  # SSH私钥路径（密码的替代方案）
     port: 22
     monitors:
       stat: true
@@ -137,22 +128,6 @@ scrape_configs:
 - `disk_free_bytes` - 可用空间
 - `disk_usage_percent` - 磁盘使用率（0-100）
 
-## 编译
-
-```bash
-# 编译当前平台版本
-make build
-
-# 交叉编译
-make build-linux-amd64   # Linux AMD64
-make build-linux-arm64   # Linux ARM64
-make build-windows       # Windows
-make build-darwin        # macOS
-make build-all           # 所有平台
-```
-
-二进制文件输出到 `bin/` 目录。
-
 ## 性能考虑
 
 - **每次抓取的 SSH 命令数（启用 stat）**：4 条命令
@@ -175,11 +150,10 @@ SSH 用户必须具有以下权限：
 
 ## 安全注意事项
 
-- 密码以**明文**形式存储在 `config.yaml` 中
-- 保护配置文件：`chmod 600 config.yaml`
-- SSH 连接使用 `InsecureIgnoreHostKey()`（接受任何主机密钥）
-- 考虑对导出器进行网络隔离
-- 暂不支持 SSH 密钥认证（计划在未来版本中支持）
+- **SSH 主机密钥**：采集器使用 `InsecureIgnoreHostKey()` 会自动信任所有 SSH 主机密钥
+- **密码存储**：密码以明文形式存储在配置文件中，请使用 `chmod 600 config.yaml` 保护
+- **SSH 认证**：支持密码认证和私钥认证两种方式
+- **HTTP 认证**：可选的 HTTP 基本认证保护指标端点
 
 ## Grafana 查询示例
 
@@ -210,14 +184,3 @@ process_pattern_count{host="192.168.1.100", pattern="nginx"}
 ## 许可证
 
 本项目采用 MIT 许可证 - 详见 [LICENSE](LICENSE) 文件。
-
-## 路线图
-
-- [ ] SSH 密钥认证支持
-- [ ] 指标端点的 TLS/HTTPS 支持
-- [ ] 配置热重载
-- [ ] 自定义指标标签
-- [ ] 网络接口统计
-- [ ] TCP/UDP 端口监控
-- [ ] 服务状态检查（systemd）
-- [ ] Docker 容器指标

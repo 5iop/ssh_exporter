@@ -9,16 +9,25 @@ import (
 
 // Config 总配置结构
 type Config struct {
-	Hosts []HostConfig `yaml:"hosts"`
+	Listen   string       `yaml:"listen"`    // HTTP监听地址，例如 ":9100"
+	HTTPAuth *HTTPAuth    `yaml:"http_auth"` // HTTP基本认证配置（可选）
+	Hosts    []HostConfig `yaml:"hosts"`
+}
+
+// HTTPAuth HTTP基本认证配置
+type HTTPAuth struct {
+	Username string `yaml:"username"`
+	Password string `yaml:"password"`
 }
 
 // HostConfig 主机配置
 type HostConfig struct {
-	Host     string          `yaml:"host"`
-	User     string          `yaml:"user"`
-	Password string          `yaml:"password"`
-	Port     int             `yaml:"port"` // SSH端口，默认22
-	Monitors MonitorConfig   `yaml:"monitors"`
+	Host           string        `yaml:"host"`
+	User           string        `yaml:"user"`
+	Password       string        `yaml:"password"`        // SSH密码（可选，如果使用私钥则不需要）
+	PrivateKeyPath string        `yaml:"private_key"`     // SSH私钥路径（可选）
+	Port           int           `yaml:"port"`            // SSH端口，默认22
+	Monitors       MonitorConfig `yaml:"monitors"`
 }
 
 // MonitorConfig 监控配置

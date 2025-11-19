@@ -1,11 +1,18 @@
 # SSH Exporter Configuration Example
 # Copy this file to config.yaml and modify according to your needs
 
+# Optional global settings
+# listen: ":9100"           # HTTP listen address (can be overridden by -listen flag)
+# http_auth:                # Optional HTTP basic authentication
+#   username: "admin"
+#   password: "secret"
+
 hosts:
-  # Example 1: Full monitoring (processes, files, system stats)
+  # Example 1: Full monitoring with password authentication
   - host: "192.168.1.100"
     user: "monitoring"
     password: "your_password_here"
+    # private_key: "/path/to/id_rsa"  # Alternative: use SSH private key instead of password
     port: 22
     monitors:
       # System statistics monitoring (CPU, Memory, Disk)
@@ -73,11 +80,13 @@ hosts:
     # No monitors specified - only SSH connectivity will be checked
 
 # Configuration Notes:
-# 
+#
 # 1. Security:
 #    - Passwords are stored in plaintext, protect this file with proper permissions
 #    - Recommended: chmod 600 config.yaml
-#    - Consider using SSH key authentication in production (not yet supported)
+#    - SSH authentication supports both password and private key
+#    - SSH connections trust all host keys (InsecureIgnoreHostKey)
+#    - HTTP basic authentication can be enabled to protect metrics endpoint
 #
 # 2. Monitoring Types:
 #    - stat: System statistics (CPU, memory, disk usage)
