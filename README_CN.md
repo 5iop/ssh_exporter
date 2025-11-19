@@ -15,7 +15,8 @@
 - **多主机支持**：通过 goroutine 并发监控多个主机
 - **基于 SSH**：目标主机无需安装代理，仅需 SSH 访问
 - **Prometheus 原生**：实现标准的 Prometheus Collector 接口
-- **跨平台**：支持 Linux、Windows、macOS（AMD64/ARM64）
+- **采集器跨平台**：采集器可运行于 Linux、Windows、macOS（AMD64/ARM64）
+- **目标系统要求**：仅支持监控 Linux 主机（依赖 `/proc` 文件系统）
 
 ## 快速开始
 

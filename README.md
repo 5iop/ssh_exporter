@@ -6,13 +6,14 @@ A Prometheus exporter written in Go that collects metrics from remote Linux host
 
 ## Features
 
-- Process Monitoring: Count processes matching specific patterns
-- File Monitoring: Track file size, age, and modification timestamps  
-- System Statistics: CPU, memory, disk usage
-- Multi-Host Support: Monitor multiple hosts concurrently
-- SSH-Based: No agent required on target hosts
-- Prometheus Native: Standard Prometheus Collector interface
-- Cross-Platform: Linux, Windows, macOS (AMD64/ARM64)
+- **Process Monitoring**: Count processes matching specific patterns
+- **File Monitoring**: Track file size, age, and modification timestamps
+- **System Statistics**: CPU, memory, disk usage
+- **Multi-Host Support**: Monitor multiple hosts concurrently
+- **SSH-Based**: No agent required on target hosts
+- **Prometheus Native**: Standard Prometheus Collector interface
+- **Cross-Platform Exporter**: Runs on Linux, Windows, macOS (AMD64/ARM64)
+- **Linux Target Systems**: Monitors Linux hosts via SSH (requires `/proc` filesystem)
 
 ## Quick Start
 
